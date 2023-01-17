@@ -1,0 +1,29 @@
+
+
+ORG &1900
+
+.start
+
+INCLUDE "sha1.6502"
+
+.main
+LDA #<data
+STA hash_data
+LDA #>data
+STA hash_data+1
+LDA #<LEN(sample)
+STA hash_length
+LDA #>LEN(sample)
+STA hash_length+1
+JSR sha1_hash
+RTS
+
+.data
+\sample="Hello darkness my old friend."
+sample="This is some junk that should be overwritten with better stuff I hope or nothing will work correctly and then where will we be?"
+EQUS sample
+
+.end
+
+SAVE "calc", start, end, main
+

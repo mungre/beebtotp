@@ -8,9 +8,6 @@ hash_next=&74
 \ Length of remaining data
 hash_remaining=&76
 
-\ Count of remaining blocks to hash
-block_count=&7E
-
 ptr=&82
 scratch=&84
 reg_index=&87
@@ -34,20 +31,6 @@ d=90
 e=91
 temp=92
 reg_count=93
-
-ORG &1900
-
-.start
-LDA #<data
-STA hash_data
-LDA #>data
-STA hash_data+1
-LDA #<LEN(sample)
-STA hash_length
-LDA #>LEN(sample)
-STA hash_length+1
-JSR sha1_hash
-RTS
 
 .sha1_hash
 \ hash_data points to the data.
@@ -559,24 +542,9 @@ EQUD &6ED9EBA1
 EQUD &8F1BBCDC
 EQUD &CA62C1D6
 
-.end
-
-.data
-
-\sample="Hello darkness my old friend."
-sample="This is some junk that should be overwritten with better stuff I hope or nothing will work correctly and then where will we be?"
-EQUS sample
-EQUS "This is some junk that should be overwritten with better stuff I hope or nothing will work correctly and then where will we be?"
-
-.data_end
-
-SKIP 128
-
 ALIGN &100
 \ Registers are big-endian
 .registers
 SKIP reg_count*4
 .registers_end
-
-SAVE "calc", start, data_end
 
