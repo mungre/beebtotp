@@ -1,0 +1,160 @@
+
+\ This handles years from 1980 to 2079.
+\ Conveniently, the simple divide by 4 leap year test is sufficient in this range.
+
+\ The number of days from the UNIX epoch to 1/1/1980
+days_epoch_1980=3652
+
+\ A tick is 30 seconds
+ticks_per_day=2880
+
+.date_time_to_ticks
+JSR time_to_ticks
+LDA acc+1
+PHA
+LDA acc
+PHA
+JSR date_to_day_number
+JSR zero_other
+LDA #<ticks_per_day
+STA other
+LDA #>ticks_per_day
+STA other+1
+LDA #0
+STA acc+2
+STA acc+3
+JSR mul32
+JSR zero_other
+PLA
+STA other
+PLA
+STA other+1
+JSR add_acc
+RTS
+
+.time_to_ticks
+LDA date_hour
+JSR unbcd
+STA acc
+LDA #60
+STA other
+LDA #0
+STA acc+1
+STA other+1
+JSR mul16
+LDA date_minute
+JSR unbcd
+CLC
+ADC acc
+STA acc
+BCC no_time_carry
+INC acc+1
+.no_time_carry
+LDA date_second
+JSR unbcd
+CMP #30
+ROL acc
+ROL acc+1
+RTS
+
+.date_to_day_number
+LDA date_year
+JSR unbcd
+PHA
+JSR year_to_day_number
+LDA date_month
+JSR unbcd
+ASL A
+TAX
+\ Set carry if leap year and march or later
+CLC
+PLA
+AND #3
+BNE not_leap
+LDA date_month
+CMP #3
+.not_leap
+LDA month_starts-2,X
+ADC acc
+STA acc
+LDA month_starts-1,X
+ADC acc+1
+STA acc+1
+LDA date_day
+JSR unbcd
+SEC
+SBC #1 \ days start from 1
+CLC
+ADC acc
+STA acc
+BCC no_day_carry
+INC acc+1
+.no_day_carry
+RTS
+
+\ Year is 1980+A
+.year_to_day_number
+\ Multiply by 365, add in number of leap years and 1980 offset
+PHA
+STA acc
+LDA #0
+STA acc+1
+LDA #<365
+STA other
+LDA #>365
+STA other+1
+JSR mul16
+PLA
+CLC
+ADC #3
+LSR A
+LSR A
+CLC
+ADC acc
+STA acc
+BCC nocarry
+INC acc+1
+.nocarry
+LDA acc
+CLC
+ADC #<days_epoch_1980
+STA acc
+LDA acc+1
+ADC #>days_epoch_1980
+STA acc+1
+RTS
+
+.unbcd
+PHA
+AND #&F0
+LSR A
+STA scratch
+LSR A
+LSR A
+CLC
+ADC scratch
+STA scratch
+PLA
+AND #&0F
+ADC scratch
+RTS
+
+.month_starts
+EQUW 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
+
+.date_block
+.date_year
+EQUB &43
+.date_month
+EQUB 1
+.date_day
+EQUB &17
+.date_weekday
+EQUB 0
+.date_hour
+EQUB &22
+.date_minute
+EQUB 6
+.date_second
+EQUB &24
+

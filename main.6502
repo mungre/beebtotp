@@ -4,9 +4,15 @@ ORG &1900
 
 .start
 
+JMP main
+
+INCLUDE "math.6502"
+INCLUDE "date.6502"
 INCLUDE "sha1.6502"
 
 .main
+JSR date_time_to_ticks
+BRK
 LDA #<data
 STA hash_data
 LDA #>data

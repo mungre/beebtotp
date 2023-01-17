@@ -8,12 +8,8 @@ hash_next=&74
 \ Length of remaining data
 hash_remaining=&76
 
+reg_index=&80
 ptr=&82
-scratch=&84
-reg_index=&87
-\ 32-bit accumulator
-acc=&88
-other=&8C
 
 \ Need 80 32-bit words plus 5 for the result and 8 scratch (a-e, f, k and temp)
 \ These are 32-bit register numbers:
@@ -405,79 +401,6 @@ STA acc+1
 INY
 LDA (ptr),Y
 STA acc
-RTS
-.and_acc
-LDA acc
-AND other
-STA acc
-LDA acc+1
-AND other+1
-STA acc+1
-LDA acc+2
-AND other+2
-STA acc+2
-LDA acc+3
-AND other+3
-STA acc+3
-RTS
-.not_acc
-LDA acc
-EOR #&FF
-STA acc
-LDA acc+1
-EOR #&FF
-STA acc+1
-LDA acc+2
-EOR #&FF
-STA acc+2
-LDA acc+3
-EOR #&FF
-STA acc+3
-RTS
-.xor_acc
-LDA acc
-EOR other
-STA acc
-LDA acc+1
-EOR other+1
-STA acc+1
-LDA acc+2
-EOR other+2
-STA acc+2
-LDA acc+3
-EOR other+3
-STA acc+3
-RTS
-.add_acc
-CLC
-LDA acc
-ADC other
-STA acc
-LDA acc+1
-ADC other+1
-STA acc+1
-LDA acc+2
-ADC other+2
-STA acc+2
-LDA acc+3
-ADC other+3
-STA acc+3
-RTS
-.left_rotate
-LDA acc+3
-ROL a
-ROL acc
-ROL acc+1
-ROL acc+2
-ROL acc+3
-RTS
-.right_rotate
-LDA acc
-ROR A
-ROR acc+3
-ROR acc+2
-ROR acc+1
-ROR acc
 RTS
 
 \ Register X = register X + register Y

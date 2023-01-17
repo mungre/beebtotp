@@ -1,0 +1,143 @@
+
+scratch=&84
+
+\ 32-bit accumulator
+acc=&88
+other=&8C
+
+.zero_other
+LDA #0
+STA other
+STA other+1
+STA other+2
+STA other+3
+RTS
+.and_acc
+LDA acc
+AND other
+STA acc
+LDA acc+1
+AND other+1
+STA acc+1
+LDA acc+2
+AND other+2
+STA acc+2
+LDA acc+3
+AND other+3
+STA acc+3
+RTS
+.not_acc
+LDA acc
+EOR #&FF
+STA acc
+LDA acc+1
+EOR #&FF
+STA acc+1
+LDA acc+2
+EOR #&FF
+STA acc+2
+LDA acc+3
+EOR #&FF
+STA acc+3
+RTS
+.xor_acc
+LDA acc
+EOR other
+STA acc
+LDA acc+1
+EOR other+1
+STA acc+1
+LDA acc+2
+EOR other+2
+STA acc+2
+LDA acc+3
+EOR other+3
+STA acc+3
+RTS
+.add_acc
+CLC
+LDA acc
+ADC other
+STA acc
+LDA acc+1
+ADC other+1
+STA acc+1
+LDA acc+2
+ADC other+2
+STA acc+2
+LDA acc+3
+ADC other+3
+STA acc+3
+RTS
+.left_rotate
+LDA acc+3
+ROL a
+ROL acc
+ROL acc+1
+ROL acc+2
+ROL acc+3
+RTS
+.right_rotate
+LDA acc
+ROR A
+ROR acc+3
+ROR acc+2
+ROR acc+1
+ROR acc
+RTS
+.mul16
+{
+LDA acc
+STA other+2
+LDA acc+1
+STA other+3
+LDA #0
+STA acc
+STA acc+1
+LDX #16
+.mul16_loop
+LSR other+1
+ROR other
+BCC low_clear
+LDA acc
+CLC
+ADC other+2
+STA acc
+LDA acc+1
+ADC other+3
+STA acc+1
+.low_clear
+ASL other+2
+ROL other+3
+DEX
+BNE mul16_loop
+RTS
+}
+.mul32
+{
+LDX #3
+.copy_zero
+LDA acc,X
+STA scratch,X
+LDA #0
+STA acc,X
+DEX
+BPL copy_zero
+LDX #32
+.mul32_loop
+LSR scratch+3
+ROR scratch+2
+ROR scratch+1
+ROR scratch
+BCC low_clear
+JSR add_acc
+.low_clear
+ASL other
+ROL other+1
+ROL other+2
+ROL other+3
+DEX
+BNE mul32_loop
+RTS
+}
+
