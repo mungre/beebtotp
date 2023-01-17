@@ -1,0 +1,678 @@
+
+\ Input values, unmodified
+hash_data=&70
+hash_length=&72
+
+\ Pointer to next block to hash
+hash_next=&74
+\ Length of remaining data
+hash_remaining=&76
+
+\ Count of remaining blocks to hash
+block_count=&7E
+
+ptr=&82
+scratch=&84
+reg_index=&87
+\ 32-bit accumulator
+acc=&88
+other=&8C
+
+\ Need 80 32-bit words plus 5 for the result and 8 scratch (a-e, f, k and temp)
+\ These are 32-bit register numbers:
+h0=80
+h1=81
+h2=82
+h3=83
+h4=84
+f=85
+k=86
+a=87
+b=88
+c=89
+d=90
+e=91
+temp=92
+reg_count=93
+
+ORG &1900
+
+.start
+LDA #<data
+STA hash_data
+LDA #>data
+STA hash_data+1
+LDA #<LEN(sample)
+STA hash_length
+LDA #>LEN(sample)
+STA hash_length+1
+JSR sha1_hash
+RTS
+
+.sha1_hash
+\ hash_data points to the data.
+\ hash_length has the length of the data; must be less than 8K.
+{
+LDA hash_data
+STA hash_next
+LDA hash_data+1
+STA hash_next+1
+LDA hash_length
+STA hash_remaining
+LDA hash_length+1
+STA hash_remaining+1
+JSR sha1_init
+.full_chunk_loop
+LDA hash_remaining
+AND #&C0
+ORA hash_remaining+1
+BEQ final_chunk
+LDA hash_remaining
+SEC
+SBC #&40
+STA hash_remaining
+BCS no_borrow
+DEC hash_remaining+1
+.no_borrow
+LDY #&40
+JSR copy_chunk
+JSR sha1_chunk
+JMP full_chunk_loop
+.final_chunk
+LDY hash_remaining
+JSR copy_chunk
+LDA #&80
+LDY hash_remaining
+STA registers,Y
+CPY #&38
+BCC chunk_fits
+JSR sha1_chunk
+LDY #&00
+JSR copy_chunk
+.chunk_fits
+\ Write length of data in bits as two byte big-endian integer
+LDA hash_length
+STA scratch
+LDA hash_length+1
+ASL scratch
+ROL A
+ASL scratch
+ROL A
+ASL scratch
+ROL A
+STA registers+&3E
+LDA scratch
+STA registers+&3F
+JSR sha1_chunk
+RTS
+
+\ Copy the next Y bytes and zero the rest of the chunk
+.copy_chunk
+STY scratch
+\ Copy Y bytes
+DEY
+BMI zero
+.copy_block_loop
+LDA (hash_next),Y
+STA registers,Y
+DEY
+BPL copy_block_loop
+\ Zero the rest of the chunk
+.zero
+LDY scratch
+LDA #&00
+BEQ zero_test
+.zero_loop
+STA registers,Y
+INY
+.zero_test
+CPY #&40
+BNE zero_loop
+LDA hash_next
+CLC
+ADC scratch
+STA hash_next
+BCC next_same_page
+INC hash_next+1
+.next_same_page
+RTS
+}
+.sha1_hash_v1
+\ hash_data points to the data; this needs trailing space for up to 72 bytes of padding.
+\ hash_length has the length of the data; must be less than 8K.
+{
+LDA hash_data
+STA hash_next
+CLC
+ADC hash_length
+STA ptr
+LDA hash_data+1
+STA hash_next+1
+ADC hash_length+1
+STA ptr+1
+\ Terminate data with a 1-bit
+LDY #0
+LDA #&80
+STA (ptr),Y
+\ Calculate length in complete blocks
+LDA hash_length+1
+STA block_count
+LDA hash_length
+CLC
+ADC #1
+STA scratch
+BCC hash_fits_1
+INC block_count
+.hash_fits_1
+ORA #&3F
+CLC
+ADC #1
+BCC hash_fits_2
+INC block_count
+.hash_fits_2
+\ Divide length by 64 for block count
+ASL A
+ROL block_count
+ASL A
+ROL block_count
+
+\ Calculate amount of padding required
+LDA scratch \ length including extra byte
+AND #&3F
+STA scratch
+LDA #&38
+SEC
+SBC scratch
+BPL same_block
+CLC
+ADC #&40
+INC block_count
+.same_block
+CLC
+ADC #6 \ Also zero first six bytes of big-endian data length
+TAX \ Padding count
+LDA #0
+.pad_loop
+INY
+STA (ptr),Y
+DEX
+BNE pad_loop
+\ There should be two bytes left to complete the block with the data length in bits
+LDA hash_length
+STA scratch
+LDA hash_length+1
+ASL scratch
+ROL A
+ASL scratch
+ROL A
+ASL scratch
+ROL A
+INY
+STA (ptr),Y
+INY
+LDA scratch
+STA (ptr),Y
+\ Calculate the hash
+JSR sha1_init
+.all_block_loop
+LDY #&3F
+.copy_block_loop
+LDA (hash_next),Y
+STA registers,Y
+DEY
+BPL copy_block_loop
+LDA hash_next
+CLC
+ADC #&40
+STA hash_next
+BCC next_same_page
+INC hash_next+1
+.next_same_page
+JSR sha1_chunk
+DEC block_count
+BNE all_block_loop
+RTS
+}
+\ Initialise the hash calculation
+.sha1_init
+LDA #0
+STA ptr
+LDX #h0
+LDY #0
+.init_hash
+JSR const_reg
+INX
+INY
+CPY #5
+BNE init_hash
+RTS
+
+\ Hash the next 64 bytes of input.
+\ Framing, terminating, padding and the length are handled by the caller.
+.sha1_chunk
+\ The chunk data is in the first 16 registers already
+LDX #16
+.init_words
+STX reg_index
+TXA
+SEC
+SBC #3
+TAX
+JSR load_acc
+TXA
+SEC
+SBC #5
+TAX
+JSR load_other
+JSR xor_acc
+TXA
+SEC
+SBC #6
+TAX
+JSR load_other
+JSR xor_acc
+TXA
+SEC
+SBC #2
+TAX
+JSR load_other
+JSR xor_acc
+JSR left_rotate
+LDX reg_index
+JSR store_acc
+INX
+CPX #80
+BNE init_words
+
+LDX #h0
+LDY #a
+.chunk_hash
+JSR copy_reg
+INX
+INY
+CPX #h4+1
+BNE chunk_hash
+
+LDX #0
+.main_loop
+STX reg_index
+JSR main_calc
+JSR main_common
+LDX reg_index
+INX
+CPX #80
+BNE main_loop
+
+LDX #h0
+LDY #a
+.add_loop
+JSR load_add_store
+INX
+INY
+CPX #h4+1
+BNE add_loop
+RTS
+
+.main_calc
+CPX #20
+BCS ge20
+\ 0-19
+LDX #b
+JSR load_acc
+JSR not_acc
+LDX #d
+JSR load_other
+JSR and_acc
+LDX #temp
+JSR store_acc
+LDX #c
+JSR load_other
+LDX #b
+JSR load_acc
+JSR and_acc
+LDX #temp
+JSR load_other
+JSR xor_acc
+LDX #f
+JSR store_acc
+LDX #k
+LDY #5
+JSR const_reg
+RTS
+.ge20
+CPX #40
+BCS ge40
+\ 20-39
+LDX #b
+JSR load_acc
+LDX #c
+JSR load_other
+JSR xor_acc
+LDX #d
+JSR load_other
+JSR xor_acc
+LDX #f
+JSR store_acc
+LDX #k
+LDY #6
+JSR const_reg
+RTS
+.ge40
+CPX #60
+BCS ge60
+\ 40-59
+LDX #c
+JSR load_acc
+LDX #d
+JSR load_other
+JSR and_acc
+LDX #temp
+JSR store_acc
+LDX #b
+JSR load_acc
+\ Redundant
+LDX #d
+JSR load_other
+JSR and_acc
+LDX #temp
+JSR load_other
+JSR xor_acc
+JSR store_acc
+LDX #b
+JSR load_acc
+LDX #c
+JSR load_other
+JSR and_acc
+LDX #temp
+JSR load_other
+JSR xor_acc
+LDX #f
+JSR store_acc
+LDX #k
+LDY #7
+JSR const_reg
+RTS
+.ge60
+\ 60-79
+LDX #b
+JSR load_acc
+LDX #c
+JSR load_other
+JSR xor_acc
+LDX #d
+JSR load_other
+JSR xor_acc
+LDX #f
+JSR store_acc
+LDX #k
+LDY #8
+JSR const_reg
+RTS
+
+.main_common
+LDX #a
+JSR load_acc
+JSR left_rotate
+JSR left_rotate
+JSR left_rotate
+JSR left_rotate
+JSR left_rotate
+LDX #f
+JSR load_other
+JSR add_acc
+LDX #e
+JSR load_other
+JSR add_acc
+LDX #k
+JSR load_other
+JSR add_acc
+LDX reg_index
+JSR load_other
+JSR add_acc
+LDX #temp
+JSR store_acc
+LDX #d
+LDY #e
+JSR copy_reg
+LDX #c
+LDY #d
+JSR copy_reg
+LDX #b
+JSR load_acc
+JSR right_rotate
+JSR right_rotate
+LDX #c
+JSR store_acc
+LDX #a
+LDY #b
+JSR copy_reg
+LDX #temp
+LDY #a
+JSR copy_reg
+RTS
+
+\ Convert X to register address in (ptr),Y
+.address
+LDA #>registers
+STA ptr+1
+TXA
+ASL A
+ASL A
+TAY
+BCC reg_low
+INC ptr+1
+.reg_low
+RTS
+.store_other
+JSR address
+LDA other+3
+STA (ptr),Y
+INY
+LDA other+2
+STA (ptr),Y
+INY
+LDA other+1
+STA (ptr),Y
+INY
+LDA other
+STA (ptr),Y
+RTS
+.store_acc
+JSR address
+LDA acc+3
+STA (ptr),Y
+INY
+LDA acc+2
+STA (ptr),Y
+INY
+LDA acc+1
+STA (ptr),Y
+INY
+LDA acc
+STA (ptr),Y
+RTS
+.load_other
+JSR address
+LDA (ptr),Y
+STA other+3
+INY
+LDA (ptr),Y
+STA other+2
+INY
+LDA (ptr),Y
+STA other+1
+INY
+LDA (ptr),Y
+STA other
+RTS
+.load_acc
+JSR address
+LDA (ptr),Y
+STA acc+3
+INY
+LDA (ptr),Y
+STA acc+2
+INY
+LDA (ptr),Y
+STA acc+1
+INY
+LDA (ptr),Y
+STA acc
+RTS
+.and_acc
+LDA acc
+AND other
+STA acc
+LDA acc+1
+AND other+1
+STA acc+1
+LDA acc+2
+AND other+2
+STA acc+2
+LDA acc+3
+AND other+3
+STA acc+3
+RTS
+.not_acc
+LDA acc
+EOR #&FF
+STA acc
+LDA acc+1
+EOR #&FF
+STA acc+1
+LDA acc+2
+EOR #&FF
+STA acc+2
+LDA acc+3
+EOR #&FF
+STA acc+3
+RTS
+.xor_acc
+LDA acc
+EOR other
+STA acc
+LDA acc+1
+EOR other+1
+STA acc+1
+LDA acc+2
+EOR other+2
+STA acc+2
+LDA acc+3
+EOR other+3
+STA acc+3
+RTS
+.add_acc
+CLC
+LDA acc
+ADC other
+STA acc
+LDA acc+1
+ADC other+1
+STA acc+1
+LDA acc+2
+ADC other+2
+STA acc+2
+LDA acc+3
+ADC other+3
+STA acc+3
+RTS
+.left_rotate
+LDA acc+3
+ROL a
+ROL acc
+ROL acc+1
+ROL acc+2
+ROL acc+3
+RTS
+.right_rotate
+LDA acc
+ROR A
+ROR acc+3
+ROR acc+2
+ROR acc+1
+ROR acc
+RTS
+
+\ Register X = register X + register Y
+.load_add_store
+STX scratch
+STY scratch+1
+JSR load_acc
+LDX scratch+1
+JSR load_other
+JSR add_acc
+LDX scratch
+JSR store_acc
+LDY scratch+1
+RTS
+
+\ Copy from register X to Y through scratch
+.copy_reg
+STX scratch
+STY scratch+1
+JSR load_other
+LDX scratch+1
+JSR store_other
+LDY scratch+1
+LDX scratch
+RTS
+
+\ X is reg, Y is constant
+.const_reg
+STX scratch
+STY scratch+1
+TYA
+ASL A
+ASL A
+PHA
+JSR address
+PLA
+TAX
+LDA constants+3,X
+STA (ptr),Y
+INY
+LDA constants+2,X
+STA (ptr),Y
+INY
+LDA constants+1,X
+STA (ptr),Y
+INY
+LDA constants,X
+STA (ptr),Y
+LDY scratch+1
+LDX scratch
+RTS
+.constants
+\ Initial hash value
+EQUD &67452301
+EQUD &EFCDAB89
+EQUD &98BADCFE
+EQUD &10325476
+EQUD &C3D2E1F0
+\ Magic numbers used in main loop
+EQUD &5A827999
+EQUD &6ED9EBA1
+EQUD &8F1BBCDC
+EQUD &CA62C1D6
+
+.end
+
+.data
+
+\sample="Hello darkness my old friend."
+sample="This is some junk that should be overwritten with better stuff I hope or nothing will work correctly and then where will we be?"
+EQUS sample
+EQUS "This is some junk that should be overwritten with better stuff I hope or nothing will work correctly and then where will we be?"
+
+.data_end
+
+SKIP 128
+
+ALIGN &100
+\ Registers are big-endian
+.registers
+SKIP reg_count*4
+.registers_end
+
+SAVE "calc", start, data_end
+
