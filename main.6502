@@ -143,5 +143,6 @@ INCLUDE "print.6502"
 \ EQUS "ABCDEFGHABCDEFGH"
 \ SAVE "STORE", sample_key, sample_key+16
 
+PUTFILE "!BOOT", 0
 SAVE "TOTP", start, end, main
 
