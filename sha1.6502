@@ -460,3 +460,5 @@ ALIGN &100
 SKIP reg_count*4
 .registers_end
 
+hash_value = registers + 4*h0
+

@@ -1,15 +1,42 @@
 
 INCLUDE "zp.6502"
 
+osword=&FFF1
+
 ORG &2000
 .start
-JMP main
+.main
+LDA #0
+LDX #<input_line
+LDY #>input_line
+JSR osword
+BCS escape
+CPY #0
+BEQ escape
+JSR decode_base32
+TYA
+PHA
+JSR now_to_ticks
+PLA
+TAY
+JSR hmac
+JSR dynamic_truncate
+.escape
+RTS
+
+.input_line
+EQUW registers
+EQUB 32 \ Maximum line length
+EQUB &20
+EQUB &7E
 
 INCLUDE "math.6502"
 INCLUDE "date.6502"
+INCLUDE "base32.6502"
 INCLUDE "sha1.6502"
+INCLUDE "hmac.6502"
 
-.main
+\.main
 JMP now_to_ticks
 LDA #<data
 STA hash_data

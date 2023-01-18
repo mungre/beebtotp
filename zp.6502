@@ -15,6 +15,12 @@ EQUD 0
 EQUD 0
 
 \ ====================================
+\ hmac.6502
+
+.key_length
+EQUB 0
+
+\ ====================================
 \ hash.6502
 
 \ Input values, unmodified

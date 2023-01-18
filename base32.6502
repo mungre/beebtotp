@@ -1,0 +1,98 @@
+
+\ Decode base32 data.
+\ This only handles input that is a multiple of eight
+\ characters, i.e. the output is a multiple of five
+\ bytes.
+
+length=scratch
+next_shift=scratch+1
+reg=scratch+2
+in_count=acc
+out_count=acc+1
+\ Y bytes of input (maximum 32) stored in registers.
+\ Decoded data stored in key_data.
+\ Length (maximum 20 bytes) returned in Y.
+.decode_base32
+{
+STY length
+TYA
+CMP #32
+BCS bad_length
+AND #7
+BNE bad_length
+LDA #3
+STA next_shift
+LDA #0
+STA in_count
+STA out_count
+.loop
+LDA #0
+STA reg+1
+LDX in_count
+LDA registers,X
+JSR decode_char
+LDY next_shift
+BEQ no_shift
+BMI right_loop
+.left_loop
+ASL A
+DEY
+BNE left_loop
+ORA reg
+STA reg
+LDA next_shift
+SEC
+SBC #5
+STA next_shift
+BVC next_byte
+.right_loop
+LSR A
+ROR reg+1
+INY
+BNE right_loop
+.no_shift
+ORA reg
+LDX out_count
+STA key_data,X
+INC out_count
+LDA next_shift
+CLC
+ADC #3
+STA next_shift
+LDA reg+1
+STA reg
+.next_byte
+INC in_count
+LDA in_count
+CMP length
+BNE loop
+LDY out_count
+RTS
+.bad_length
+BRK
+EQUB 82
+EQUS "Multiple of eight characters required"
+EQUB 0
+
+.decode_char
+CMP #ASC("2")
+BCC bad_char
+CMP #ASC("8")
+BCC digit
+CMP #ASC("A")
+BCC bad_char
+CMP #ASC("Z")+1
+BCS bad_char
+SEC
+SBC #ASC("A")
+RTS
+.digit
+SEC
+SBC #ASC("2")-26
+RTS
+.bad_char
+BRK
+EQUB 83
+EQUS "Invalid base32 character"
+EQUB 0
+}

@@ -1,0 +1,94 @@
+
+\ K is the key provided by github
+\ opad is 64 bytes of &5C
+\ ipad is 64 bytes of &36
+\ m is the current time in ticks as an eight byte big-endian value
+\ ^ denotes xor, | denotes concatenation
+\ HMAC=H((K^opad)|H((K^ipad)|m))
+
+.hmac
+\ Y bytes of key data stored in key_data.
+\ The current time in ticks is supplied as four bytes in acc.
+{
+STY key_length
+LDA #&36
+JSR pad
+JSR xor_key
+LDA #<hmac_buffer
+STA hash_data
+LDA #>hmac_buffer
+STA hash_data+1
+LDA #&40+8
+STA hash_length
+LDA #0
+STA hash_length+1
+STA hmac_buffer+&40
+STA hmac_buffer+&41
+STA hmac_buffer+&42
+STA hmac_buffer+&43
+LDA acc+3
+STA hmac_buffer+&44
+LDA acc+2
+STA hmac_buffer+&45
+LDA acc+1
+STA hmac_buffer+&46
+LDA acc
+STA hmac_buffer+&47
+JSR sha1_hash
+LDA #&5C
+JSR pad
+JSR xor_key
+LDX #19
+.copy_hash
+LDA hash_value,X
+STA hmac_buffer+&40,X
+DEX
+BPL copy_hash
+LDA #&40+20
+STA hash_length
+JSR sha1_hash
+RTS
+
+.pad
+LDX #&3F
+.pad_loop
+STA hmac_buffer,X
+DEX
+BPL pad_loop
+RTS
+
+.xor_key
+LDY key_length
+DEY
+.xor_loop
+LDA hmac_buffer,Y
+EOR key_data,Y
+STA hmac_buffer,Y
+DEY
+BPL xor_loop
+RTS
+
+.hmac_buffer
+SKIP &40+20
+}
+
+.key_data
+SKIP 20
+
+.dynamic_truncate
+{
+LDA hash_value+19
+AND #&0F
+TAX
+LDA hash_value,X
+AND #&7F
+STA acc+3
+LDA hash_value+1,X
+STA acc+2
+LDA hash_value+2,X
+STA acc+1
+LDA hash_value+3,X
+STA acc
+RTS
+}
+

@@ -10,8 +10,6 @@ days_epoch_2000=10957
 \ A tick is 30 seconds
 ticks_per_day=2880
 
-osword=&FFF1
-
 \ OSWORD 14 is supposed to return a two-digit BCD year but until
 \ about a fortnight ago beebem had two RTC modes, both of which
 \ were broken.  Coincidentally, chrisn did a fix on 1/1/23 but
