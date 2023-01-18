@@ -1,11 +1,56 @@
 
 INCLUDE "zp.6502"
 
+osfile=&FFDD
+osasci=&FFE3
+oswrch=&FFEE
 osword=&FFF1
 
 ORG &2000
 .start
 .main
+\ Check if "STORE" exists
+LDA #5
+LDX #<file_info
+LDY #>file_info
+JSR osfile
+CMP #0
+BEQ prompt
+LDA file_length
+BEQ bad_length
+AND #&E0
+ORA file_length+1
+ORA file_length+2
+ORA file_length+3
+BEQ not_long
+.bad_length
+BRK
+EQUB 84
+EQUS "STORE too long or too short!"
+EQUB 0
+.not_long
+\ Load "STORE"
+JSR clear_file
+LDA input_line
+STA file_load
+LDA input_line+1
+STA file_load+1
+LDX #<file_info
+LDY #>file_info
+LDA #&FF
+JSR osfile
+LDY file_length
+JSR decode_base32
+STY key_length
+JMP showtime
+.prompt
+LDX #0
+.message_loop
+LDA message,X
+JSR osasci
+INX
+CMP #13
+BNE message_loop
 LDA #0
 LDX #<input_line
 LDY #>input_line
@@ -13,12 +58,29 @@ JSR osword
 BCS escape
 CPY #0
 BEQ escape
-JSR decode_base32
 TYA
 PHA
+JSR decode_base32
+STY key_length
+\ Save "STORE"
+JSR clear_file
+LDA input_line
+STA file_length
+PLA \ length of base32 data
+CLC
+ADC input_line
+STA file_end
+LDA input_line+1
+STA file_length+1
+ADC #&00
+STA file_end+1
+LDX #<file_info
+LDY #>file_info
+LDA #&00
+JSR osfile
+.showtime
 JSR now_to_ticks
-PLA
-TAY
+LDY key_length
 JSR hmac
 JSR dynamic_truncate
 .escape
@@ -30,29 +92,37 @@ EQUB 32 \ Maximum line length
 EQUB &20
 EQUB &7E
 
+.file_info
+EQUW file_name
+.file_load
+EQUD 0
+.file_exe
+EQUD 0
+.file_length
+EQUD 0
+.file_end
+EQUD 0
+
+.file_name
+EQUS "STORE", 13
+
+.message
+EQUS "Enter key (it will be saved):", 13
+
+.clear_file
+LDX #15
+LDA #0
+.clear_loop
+STA file_load,X
+DEX
+BPL clear_loop
+RTS
+
 INCLUDE "math.6502"
 INCLUDE "date.6502"
 INCLUDE "base32.6502"
 INCLUDE "sha1.6502"
 INCLUDE "hmac.6502"
-
-\.main
-JMP now_to_ticks
-LDA #<data
-STA hash_data
-LDA #>data
-STA hash_data+1
-LDA #<LEN(sample)
-STA hash_length
-LDA #>LEN(sample)
-STA hash_length+1
-JSR sha1_hash
-RTS
-
-.data
-\sample="Hello darkness my old friend."
-sample="This is some junk that should be overwritten with better stuff I hope or nothing will work correctly and then where will we be?"
-EQUS sample
 
 .end
 
