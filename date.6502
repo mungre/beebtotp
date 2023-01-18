@@ -8,6 +8,21 @@ days_epoch_1980=3652
 \ A tick is 30 seconds
 ticks_per_day=2880
 
+osword=&FFF1
+
+\ OSWORD 14 is supposed to return the number of years since 1980
+\ but currently returns some right old nonsense in beebem.  There
+\ is a bug fix, I'll try that.
+.now_to_ticks
+LDA #1
+STA date_block
+LDX #<date_block
+LDY #>date_block
+LDA #14
+JSR osword
+JSR date_time_to_ticks
+RTS
+
 .date_time_to_ticks
 JSR time_to_ticks
 LDA acc+1

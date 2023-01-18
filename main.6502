@@ -11,8 +11,7 @@ INCLUDE "date.6502"
 INCLUDE "sha1.6502"
 
 .main
-JSR date_time_to_ticks
-BRK
+JMP now_to_ticks
 LDA #<data
 STA hash_data
 LDA #>data
