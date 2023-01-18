@@ -126,5 +126,5 @@ INCLUDE "hmac.6502"
 
 .end
 
-SAVE "calc", start, end, main
+SAVE "TOTP", start, end, main
 
