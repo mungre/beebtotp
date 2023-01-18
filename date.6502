@@ -2,8 +2,8 @@
 \ This handles years from 1980 to 2079.
 \ Conveniently, the simple divide by 4 leap year test is sufficient in this range.
 
-\ The number of days from the UNIX epoch to 1/1/1980
-days_epoch_1980=3652
+\ The number of days from the UNIX epoch to 1/1/2000
+days_epoch_2000=10957
 
 \ A tick is 30 seconds
 ticks_per_day=2880
@@ -107,7 +107,7 @@ INC acc+1
 .no_day_carry
 RTS
 
-\ Year is 1980+A
+\ Year is 2000+A
 .year_to_day_number
 \ Multiply by 365, add in number of leap years and 1980 offset
 PHA
@@ -132,10 +132,10 @@ INC acc+1
 .nocarry
 LDA acc
 CLC
-ADC #<days_epoch_1980
+ADC #<days_epoch_2000
 STA acc
 LDA acc+1
-ADC #>days_epoch_1980
+ADC #>days_epoch_2000
 STA acc+1
 RTS
 
