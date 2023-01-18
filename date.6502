@@ -1,5 +1,7 @@
 
-\ This handles years from 1980 to 2079.
+\ This could handle years from 2000 to 2079 but it currently
+\ restricts itself to the 2020s to workaround a beebem bug.
+
 \ Conveniently, the simple divide by 4 leap year test is sufficient in this range.
 
 \ The number of days from the UNIX epoch to 1/1/2000
@@ -10,9 +12,10 @@ ticks_per_day=2880
 
 osword=&FFF1
 
-\ OSWORD 14 is supposed to return the number of years since 1980
-\ but currently returns some right old nonsense in beebem.  There
-\ is a bug fix, I'll try that.
+\ OSWORD 14 is supposed to return a two-digit BCD year but until
+\ about a fortnight ago beebem had two RTC modes, both of which
+\ were broken.  Coincidentally, chrisn did a fix on 1/1/23 but
+\ it hasn't made it into a release.
 .now_to_ticks
 LDA #1
 STA date_block
@@ -20,6 +23,12 @@ LDX #<date_block
 LDY #>date_block
 LDA #14
 JSR osword
+\ TODO: Remove this workaround before 2030!
+\ Clamp to 2020s to workaround beebem problem.
+LDA date_year
+AND #&0F
+ORA #&20
+STA date_year
 JSR date_time_to_ticks
 RTS
 
