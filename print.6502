@@ -1,3 +1,12 @@
+\***************************************************************************
+\
+\   print.6502 - Decimal Printing
+\
+\   Copyright (C) Charles Reilly 2023
+\
+\   This file is licensed under the GNU General Public License version 3
+\
+\***************************************************************************
 
 \ Print last six decimal digits of 31-bit number in acc
 .print_result

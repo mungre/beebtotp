@@ -1,4 +1,12 @@
-
+\***************************************************************************
+\
+\   sha1.6502 - Calculate SHA-1 Hash
+\
+\   Copyright (C) Charles Reilly 2023
+\
+\   This file is licensed under the GNU General Public License version 3
+\
+\***************************************************************************
 
 \ Need 80 32-bit words plus 5 for the result and 8 scratch (a-e, f, k and temp)
 \ These are 32-bit register numbers:

@@ -1,3 +1,12 @@
+\***************************************************************************
+\
+\   base32.6502 - RFC4648 Base32 Decoding
+\
+\   Copyright (C) Charles Reilly 2023
+\
+\   This file is licensed under the GNU General Public License version 3
+\
+\***************************************************************************
 
 \ Decode base32 data.
 \ This only handles input that is a multiple of eight

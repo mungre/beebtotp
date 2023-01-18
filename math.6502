@@ -1,4 +1,12 @@
-
+\***************************************************************************
+\
+\   math.6502 - 32-bit Integer Arithmetic
+\
+\   Copyright (C) Charles Reilly 2023
+\
+\   This file is licensed under the GNU General Public License version 3
+\
+\***************************************************************************
 
 .zero_other
 LDA #0

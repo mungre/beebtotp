@@ -1,3 +1,12 @@
+\***************************************************************************
+\
+\   date.6502 - Convert Date to Number of Ticks
+\
+\   Copyright (C) Charles Reilly 2023
+\
+\   This file is licensed under the GNU General Public License version 3
+\
+\***************************************************************************
 
 \ This could handle years from 2000 to 2079 but it currently
 \ restricts itself to the 2020s to workaround a beebem bug.
