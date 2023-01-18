@@ -1,0 +1,83 @@
+
+\ Print last six decimal digits of 31-bit number in acc
+.print_result
+{
+LDY #&FF
+.digit_loop
+JSR divmod10
+INY
+LDA acc
+STA registers,Y
+LDA other
+STA acc
+LDA other+1
+STA acc+1
+LDA other+2
+STA acc+2
+LDA other+3
+STA acc+3
+ORA acc+2
+ORA acc+1
+ORA acc
+BNE digit_loop
+CPY #6
+BCC write_loop
+LDY #5
+.write_loop
+LDA registers,Y
+CLC
+ADC #&30
+JSR oswrch
+DEY
+BPL write_loop
+JSR osnewl
+RTS
+
+.divmod10
+LDA #&A0
+STA scratch+3
+LDA #&00
+STA scratch+2
+STA scratch+1
+STA scratch
+JSR zero_other
+LDX #29
+.div_loop
+SEC
+LDA acc
+SBC scratch
+LDA acc+1
+SBC scratch+1
+LDA acc+2
+SBC scratch+2
+LDA acc+3
+SBC scratch+3
+PHP
+ROL other
+ROL other+1
+ROL other+2
+ROL other+3
+PLP
+BCC too_big
+LDA acc
+SBC scratch
+STA acc
+LDA acc+1
+SBC scratch+1
+STA acc+1
+LDA acc+2
+SBC scratch+2
+STA acc+2
+LDA acc+3
+SBC scratch+3
+STA acc+3
+.too_big
+LSR scratch+3
+ROR scratch+2
+ROR scratch+1
+ROR scratch
+DEX
+BNE div_loop
+RTS
+}
+

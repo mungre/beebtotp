@@ -3,6 +3,7 @@ INCLUDE "zp.6502"
 
 osfile=&FFDD
 osasci=&FFE3
+osnewl=&FFE7
 oswrch=&FFEE
 osword=&FFF1
 
@@ -78,11 +79,13 @@ LDX #<file_info
 LDY #>file_info
 LDA #&00
 JSR osfile
+
 .showtime
 JSR now_to_ticks
 LDY key_length
 JSR hmac
 JSR dynamic_truncate
+JSR print_result
 .escape
 RTS
 
@@ -123,8 +126,13 @@ INCLUDE "date.6502"
 INCLUDE "base32.6502"
 INCLUDE "sha1.6502"
 INCLUDE "hmac.6502"
+INCLUDE "print.6502"
 
 .end
+
+\ .sample_key
+\ EQUS "ABCDEFGHABCDEFGH"
+\ SAVE "STORE", sample_key, sample_key+16
 
 SAVE "TOTP", start, end, main
 
