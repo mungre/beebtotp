@@ -1,15 +1,4 @@
 
-\ Input values, unmodified
-hash_data=&70
-hash_length=&72
-
-\ Pointer to next block to hash
-hash_next=&74
-\ Length of remaining data
-hash_remaining=&76
-
-reg_index=&80
-ptr=&82
 
 \ Need 80 32-bit words plus 5 for the result and 8 scratch (a-e, f, k and temp)
 \ These are 32-bit register numbers:

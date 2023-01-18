@@ -1,0 +1,37 @@
+
+\ Zero page allocations
+
+ORG &70
+
+\ ====================================
+\ math.6502
+
+\ 32-bit accumulator
+.acc
+EQUD 0
+.other
+EQUD 0
+.scratch
+EQUD 0
+
+\ ====================================
+\ hash.6502
+
+\ Input values, unmodified
+.hash_data
+EQUW 0
+.hash_length
+EQUW 0
+
+\ Pointer to next block to hash
+.hash_next
+EQUW 0
+\ Length of remaining data
+.hash_remaining
+EQUW 0
+
+.reg_index
+EQUB 0
+.ptr
+EQUW 0
+

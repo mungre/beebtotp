@@ -1,9 +1,4 @@
 
-scratch=&84
-
-\ 32-bit accumulator
-acc=&88
-other=&8C
 
 .zero_other
 LDA #0

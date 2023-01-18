@@ -1,9 +1,8 @@
 
+INCLUDE "zp.6502"
 
-ORG &1900
-
+ORG &2000
 .start
-
 JMP main
 
 INCLUDE "math.6502"
